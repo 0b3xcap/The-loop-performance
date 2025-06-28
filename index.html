@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Performance Loop</title>
+  <title>Production Performance</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -17,11 +17,11 @@
       position: absolute;
       width: 100%;
       height: 100%;
+      background: black;
       display: flex;
       justify-content: center;
       align-items: center;
       flex-direction: column;
-      text-align: center;
       opacity: 0;
       transition: opacity 1s ease-in-out;
     }
@@ -29,19 +29,26 @@
       opacity: 1;
       z-index: 1;
     }
-    video, img {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
+    .media {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: -1;
+    }
+    .contain-fit {
+      object-fit: contain !important;
+      background-color: black;
     }
     .text {
-      color: white;
       font-size: clamp(1.8rem, 4vw, 2.6rem);
       font-weight: 800;
-      text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.7);
+      letter-spacing: -0.5px;
       padding: 2rem;
       text-align: center;
-      white-space: pre-wrap;
+      text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.7);
     }
     .typed {
       white-space: pre-wrap;
@@ -55,12 +62,12 @@
 
 <script>
   const sequence = [
-    { file: "image1PERF.MP4", type: "video", text: "Every shift rewrites the standard." },
-    { file: "ProudmomentOEE.png", type: "image", text: "That’s what flow looks like.", specialHold: 15000 },
-    { file: "image3PERF.jpeg", type: "image", text: "You don’t lose the line.\nYou’re handed a mess." },
-    { file: "image4PERF.MP4", type: "video", text: "Rejects don’t shout.\nThey slip through if we’re not watching." },
-    { file: "image5PERF.jpeg", type: "image", text: "What’s next only works if we’re ready now." },
-    { file: "image6PERF.MP4", type: "video", text: "Every shift rewrites the standard.\n\nDay after day.\nYear after year." }
+    { src: 'image1PERF.MP4', type: 'video', text: "Every shift rewrites the standard." },
+    { src: 'ProudmomentOEE.png', type: 'image', text: "That’s what flow looks like.", hold: 15000 },
+    { src: 'image3PERF.jpeg', type: 'image', text: "You don’t lose the line.\nYou’re handed a mess." },
+    { src: 'image4PERF.MP4', type: 'video', text: "Rejects don’t shout. They slip through if we’re not watching." },
+    { src: 'image5PERF.jpeg', type: 'image', text: "What’s next only works if we’re ready now." },
+    { src: 'image6PERF.MP4', type: 'video', text: "Every shift rewrites the standard.\nDay after day.\nYear after year." }
   ];
 
   const container = document.getElementById('slideshow');
@@ -71,40 +78,38 @@
     slide.id = `slide-${i}`;
 
     let media;
-    if (item.type === "video") {
+    if (item.type === 'video') {
       media = document.createElement('video');
-      media.src = item.file;
-      media.autoplay = false;
+      media.src = item.src;
+      media.className = 'media';
       media.muted = true;
       media.playsInline = true;
     } else {
       media = document.createElement('img');
-      media.src = item.file;
-      media.style.opacity = 0;
-      media.style.transition = "opacity 1s ease-in-out";
+      media.src = item.src;
+      media.className = 'media';
+      if (item.src === 'ProudmomentOEE.png') {
+        media.classList.add('contain-fit');
+      }
     }
-
-    slide.appendChild(media);
 
     const textDiv = document.createElement('div');
     textDiv.className = 'text';
-    if (item.text) {
-      const span = document.createElement('span');
-      span.className = 'typed';
-      textDiv.appendChild(span);
-      slide.appendChild(textDiv);
-    }
+    if (item.text) textDiv.innerHTML = `<span class="typed"></span>`;
 
+    slide.appendChild(media);
+    if (item.text) slide.appendChild(textDiv);
     container.appendChild(slide);
   });
 
   const slides = document.querySelectorAll('.slide');
+  let current = 0;
 
-  function typeText(element, text, speed = 150) {
+  function typeText(el, text, speed = 100) {
     return new Promise(resolve => {
       let i = 0;
       const interval = setInterval(() => {
-        element.textContent += text.charAt(i);
+        el.textContent += text.charAt(i);
         i++;
         if (i >= text.length) {
           clearInterval(interval);
@@ -115,43 +120,38 @@
   }
 
   async function runSlide(i) {
-    if (i >= slides.length) return;
-
     slides.forEach(s => s.classList.remove('active'));
     const currentSlide = slides[i];
-    const media = currentSlide.querySelector('video, img');
-    const textEl = currentSlide.querySelector('.typed');
     currentSlide.classList.add('active');
 
-    await new Promise(r => setTimeout(r, 250)); // slight pre-delay
+    const media = currentSlide.querySelector('.media');
+    const textEl = currentSlide.querySelector('.typed');
+
+    await new Promise(r => setTimeout(r, 250)); // Pre-delay
 
     if (media.tagName === 'VIDEO') {
       media.currentTime = 0;
       media.play();
-      await new Promise(r => setTimeout(r, 5000));
+      await new Promise(r => setTimeout(r, 5000)); // Fixed video duration
     } else {
-      media.style.opacity = '1';
-      await new Promise(r => setTimeout(r, 1000)); // fade in
-      const holdTime = sequence[i].specialHold || 6000;
-      await new Promise(r => setTimeout(r, holdTime)); // hold
-      media.style.opacity = '0';
-      await new Promise(r => setTimeout(r, 1000)); // fade out
+      await new Promise(r => setTimeout(r, 1000)); // Image fade-in
+      await new Promise(r => setTimeout(r, sequence[i].hold || 7500));
     }
 
-    if (textEl && sequence[i].text) {
+    if (textEl) {
       textEl.textContent = "";
       await typeText(textEl, sequence[i].text);
-      await new Promise(r => setTimeout(r, 2000)); // hold after typing
-    } else {
-      await new Promise(r => setTimeout(r, 3000));
+      await new Promise(r => setTimeout(r, 2000)); // Post-type hold
     }
 
-    currentSlide.classList.remove('active');
-    setTimeout(() => runSlide(i + 1), 250);
+    current++;
+    if (current < slides.length) {
+      setTimeout(() => runSlide(current), 250); // Transition delay
+    }
   }
 
   window.onload = () => {
-    runSlide(0);
+    runSlide(current);
   };
 </script>
 
