@@ -95,20 +95,6 @@
 
   const slides = document.querySelectorAll('.slide');
 
-  function typeText(element, text, speed = 120) {
-    return new Promise(resolve => {
-      let i = 0;
-      const interval = setInterval(() => {
-        element.textContent += text.charAt(i);
-        i++;
-        if (i >= text.length) {
-          clearInterval(interval);
-          resolve();
-        }
-      }, speed);
-    });
-  }
-
   async function runSlide(i) {
     if (i >= slides.length) return;
 
@@ -133,13 +119,14 @@
     currentSlide.classList.remove('active');
     await new Promise(r => setTimeout(r, 2000)); // fade out media
 
+    // Text display instead of typing
+    textEl.textContent = sequence[i].text || "";
     textEl.classList.add('visible');
-    await typeText(textEl, sequence[i].text || "");
-    await new Promise(r => setTimeout(r, 2000)); // hold after typing
+    await new Promise(r => setTimeout(r, 4000)); // hold text
     textEl.classList.remove('visible');
     await new Promise(r => setTimeout(r, 2000)); // fade out text
 
-    setTimeout(() => runSlide(i + 1), 500); // transition delay
+    setTimeout(() => runSlide(i + 1), 500);
   }
 
   window.onload = () => {
