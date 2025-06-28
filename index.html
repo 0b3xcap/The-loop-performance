@@ -44,8 +44,6 @@
       font-weight: 800;
       text-shadow: 2px 2px 5px rgba(0,0,0,0.7);
       white-space: pre-wrap;
-      opacity: 0;
-      transition: opacity 2s ease-in-out;
     }
   </style>
 </head>
@@ -70,21 +68,21 @@
     slide.classList.add('slide');
     slide.id = `slide-${i}`;
 
-    const media = item.type === "video"
-      ? Object.assign(document.createElement('video'), {
-          src: item.file,
-          muted: true,
-          playsInline: true
-        })
-      : Object.assign(document.createElement('img'), {
-          src: item.file
-        });
-
+    let media;
+    if (item.type === "video") {
+      media = document.createElement('video');
+      media.src = item.file;
+      media.autoplay = false;
+      media.muted = true;
+      media.playsInline = true;
+    } else {
+      media = document.createElement('img');
+      media.src = item.file;
+    }
     slide.appendChild(media);
 
     const textDiv = document.createElement('div');
     textDiv.className = 'text';
-    textDiv.id = `text-${i}`;
     slide.appendChild(textDiv);
 
     container.appendChild(slide);
@@ -95,17 +93,12 @@
   function typeText(element, text, speed = 120) {
     return new Promise(resolve => {
       let i = 0;
-      element.textContent = "";
-      element.style.opacity = 1;
       const interval = setInterval(() => {
         element.textContent += text.charAt(i);
         i++;
         if (i >= text.length) {
           clearInterval(interval);
-          setTimeout(() => {
-            element.style.opacity = 0;
-            resolve();
-          }, 2000); // hold after typing
+          resolve();
         }
       }, speed);
     });
@@ -118,29 +111,30 @@
     const currentSlide = slides[i];
     const media = currentSlide.querySelector('video, img');
     const textEl = currentSlide.querySelector('.text');
-    const duration = sequence[i].duration || 5000;
+    textEl.textContent = "";
 
     currentSlide.classList.add('active');
     await new Promise(r => setTimeout(r, 500)); // initial delay
 
-    // Play media
     if (media.tagName === 'VIDEO') {
       media.currentTime = 0;
       media.play();
-      await new Promise(r => setTimeout(r, 5000));
+      await new Promise(r => setTimeout(r, 5000)); // play duration
+      currentSlide.classList.remove('active'); // fade out video
+      await new Promise(r => setTimeout(r, 2000));
     } else {
-      media.style.opacity = 1;
-      await new Promise(r => setTimeout(r, duration));
-      media.style.opacity = 0;
+      await new Promise(r => setTimeout(r, sequence[i].duration || 5000));
+      currentSlide.classList.remove('active'); // fade out image
+      await new Promise(r => setTimeout(r, 2000));
     }
 
-    await new Promise(r => setTimeout(r, 2000)); // fade out media
-
-    // Type text after media
+    textEl.textContent = "";
     await typeText(textEl, sequence[i].text || "");
+    await new Promise(r => setTimeout(r, 2000)); // hold text
+    textEl.textContent = "";
 
-    currentSlide.classList.remove('active');
-    setTimeout(() => runSlide(i + 1), 500); // delay to next slide
+    await new Promise(r => setTimeout(r, 2000)); // fade out text
+    setTimeout(() => runSlide(i + 1), 500); // next slide
   }
 
   window.onload = () => {
