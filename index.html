@@ -114,27 +114,25 @@
     textEl.textContent = "";
 
     currentSlide.classList.add('active');
-    await new Promise(r => setTimeout(r, 500)); // initial delay
+    await new Promise(r => setTimeout(r, 500)); // delay before media
 
     if (media.tagName === 'VIDEO') {
       media.currentTime = 0;
       media.play();
-      await new Promise(r => setTimeout(r, 5000)); // play duration
-      currentSlide.classList.remove('active'); // fade out video
-      await new Promise(r => setTimeout(r, 2000));
+      await new Promise(r => setTimeout(r, 5000)); // play 5s
+      currentSlide.classList.remove('active');    // fade out
+      await new Promise(r => setTimeout(r, 2000)); // fade buffer
     } else {
       await new Promise(r => setTimeout(r, sequence[i].duration || 5000));
-      currentSlide.classList.remove('active'); // fade out image
+      currentSlide.classList.remove('active');    // fade out
       await new Promise(r => setTimeout(r, 2000));
     }
 
-    textEl.textContent = "";
     await typeText(textEl, sequence[i].text || "");
-    await new Promise(r => setTimeout(r, 2000)); // hold text
+    await new Promise(r => setTimeout(r, 2000)); // hold
     textEl.textContent = "";
-
-    await new Promise(r => setTimeout(r, 2000)); // fade out text
-    setTimeout(() => runSlide(i + 1), 500); // next slide
+    await new Promise(r => setTimeout(r, 2000)); // fade out
+    setTimeout(() => runSlide(i + 1), 500); // transition
   }
 
   window.onload = () => {
