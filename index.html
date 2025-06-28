@@ -44,6 +44,7 @@
       font-weight: 800;
       text-shadow: 2px 2px 5px rgba(0,0,0,0.7);
       white-space: pre-wrap;
+      color: white;
     }
   </style>
 </head>
@@ -79,16 +80,15 @@
       media = document.createElement('img');
       media.src = item.file;
     }
-    slide.appendChild(media);
 
     const textDiv = document.createElement('div');
     textDiv.className = 'text';
-    slide.appendChild(textDiv);
+    textDiv.id = `text-${i}`;
 
+    slide.appendChild(media);
+    slide.appendChild(textDiv);
     container.appendChild(slide);
   });
-
-  const slides = document.querySelectorAll('.slide');
 
   function typeText(element, text, speed = 120) {
     return new Promise(resolve => {
@@ -105,39 +105,45 @@
   }
 
   async function runSlide(i) {
-    if (i >= slides.length) return;
+    if (i >= sequence.length) return;
 
-    slides.forEach(s => s.classList.remove('active'));
-    const currentSlide = slides[i];
+    const currentSlide = document.getElementById(`slide-${i}`);
     const media = currentSlide.querySelector('video, img');
-    const textEl = currentSlide.querySelector('.text');
-    textEl.textContent = "";
+    const textBox = document.getElementById(`text-${i}`);
+    textBox.textContent = "";
 
+    document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
     currentSlide.classList.add('active');
-    await new Promise(r => setTimeout(r, 500)); // delay before media
 
-    if (media.tagName === 'VIDEO') {
+    await new Promise(r => setTimeout(r, 500)); // initial delay
+
+    if (media.tagName === "VIDEO") {
       media.currentTime = 0;
       media.play();
-      await new Promise(r => setTimeout(r, 5000)); // play 5s
-      currentSlide.classList.remove('active');    // fade out
-      await new Promise(r => setTimeout(r, 2000)); // fade buffer
+      await new Promise(r => setTimeout(r, 5000)); // video duration
+      media.style.opacity = 0;
+      await new Promise(r => setTimeout(r, 2000)); // fade video out
     } else {
-      await new Promise(r => setTimeout(r, sequence[i].duration || 5000));
-      currentSlide.classList.remove('active');    // fade out
-      await new Promise(r => setTimeout(r, 2000));
+      await new Promise(r => setTimeout(r, 5000)); // image hold
+      if (sequence[i].file === "ProudmomentOEE.png") {
+        await new Promise(r => setTimeout(r, 10000)); // extra for OEE
+      }
+      media.style.opacity = 0;
+      await new Promise(r => setTimeout(r, 2000)); // fade image out
     }
 
-    await typeText(textEl, sequence[i].text || "");
-    await new Promise(r => setTimeout(r, 2000)); // hold
-    textEl.textContent = "";
-    await new Promise(r => setTimeout(r, 2000)); // fade out
-    setTimeout(() => runSlide(i + 1), 500); // transition
+    if (sequence[i].text) {
+      await typeText(textBox, sequence[i].text);
+      await new Promise(r => setTimeout(r, 2000)); // hold after typing
+      textBox.textContent = "";
+    }
+
+    currentSlide.classList.remove('active');
+    await new Promise(r => setTimeout(r, 500)); // delay before next
+    runSlide(i + 1);
   }
 
-  window.onload = () => {
-    runSlide(0);
-  };
+  window.onload = () => runSlide(0);
 </script>
 
 </body>
