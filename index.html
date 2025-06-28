@@ -2,25 +2,26 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Performance Loop</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
-      width: 100%;
-      height: 100%;
       background: black;
+      color: white;
+      font-family: "Arial Black", "Segoe UI Semibold", sans-serif;
+      height: 100%;
       overflow: hidden;
-      font-family: "Arial Black", "Segoe UI", sans-serif;
+      touch-action: none;
     }
     .slide {
       position: absolute;
-      width: 100vw;
-      height: 100vh;
+      width: 100%;
+      height: 100%;
       display: flex;
-      flex-direction: column;
       justify-content: center;
       align-items: center;
+      flex-direction: column;
       opacity: 0;
       transition: opacity 2s ease-in-out;
     }
@@ -29,21 +30,22 @@
       z-index: 1;
     }
     video, img {
-      max-width: 100vw;
-      max-height: 100vh;
+      width: 100%;
+      height: 100%;
       object-fit: cover;
-      transition: opacity 2s ease-in-out;
     }
     .text {
-      margin-top: 2vh;
-      color: white;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
       font-size: clamp(1.8rem, 4vw, 2.6rem);
       font-weight: 800;
-      text-align: center;
+      text-shadow: 2px 2px 5px rgba(0,0,0,0.7);
       white-space: pre-wrap;
       opacity: 0;
       transition: opacity 2s ease-in-out;
-      text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.7);
     }
     .text.visible {
       opacity: 1;
@@ -57,86 +59,91 @@
 <script>
   const sequence = [
     { file: "image1PERF.MP4", type: "video", text: "Every shift rewrites the standard." },
-    { file: "ProudmomentOEE.png", type: "image", text: "That’s what flow looks like." },
+    { file: "ProudmomentOEE.png", type: "image", text: "That’s what flow looks like.", duration: 15000 },
     { file: "image3PERF.PNG", type: "image", text: "You don’t lose the line.\nYou’re handed a mess." },
     { file: "image4PERF.MP4", type: "video", text: "Rejects don’t shout.\nThey slip through if we’re not watching." },
     { file: "image5PERF.PNG", type: "image", text: "What’s next only works if we’re ready now." },
-    { file: "image6PERF.MP4", type: "video", text: "Every shift rewrites the standard." }
+    { file: "image6PERF.MP4", type: "video", text: "Every shift rewrites the standard.\n\nDay after day.\nYear after year." }
   ];
 
-  const container = document.getElementById("slideshow");
+  const container = document.getElementById('slideshow');
 
   sequence.forEach((item, i) => {
-    const slide = document.createElement("div");
-    slide.classList.add("slide");
+    const slide = document.createElement('div');
+    slide.classList.add('slide');
     slide.id = `slide-${i}`;
 
     let media;
     if (item.type === "video") {
-      media = document.createElement("video");
+      media = document.createElement('video');
       media.src = item.file;
       media.autoplay = false;
       media.muted = true;
       media.playsInline = true;
     } else {
-      media = document.createElement("img");
+      media = document.createElement('img');
       media.src = item.file;
     }
     slide.appendChild(media);
 
-    const text = document.createElement("div");
-    text.className = "text";
-    text.textContent = item.text;
-    slide.appendChild(text);
+    const textDiv = document.createElement('div');
+    textDiv.className = 'text';
+    slide.appendChild(textDiv);
 
     container.appendChild(slide);
   });
 
-  const slides = document.querySelectorAll(".slide");
+  const slides = document.querySelectorAll('.slide');
 
-  async function runSlides(i) {
+  function typeText(element, text, speed = 120) {
+    return new Promise(resolve => {
+      let i = 0;
+      const interval = setInterval(() => {
+        element.textContent += text.charAt(i);
+        i++;
+        if (i >= text.length) {
+          clearInterval(interval);
+          resolve();
+        }
+      }, speed);
+    });
+  }
+
+  async function runSlide(i) {
     if (i >= slides.length) return;
 
-    const current = slides[i];
-    const media = current.querySelector("video, img");
-    const text = current.querySelector(".text");
+    slides.forEach(s => s.classList.remove('active'));
+    const currentSlide = slides[i];
+    const media = currentSlide.querySelector('video, img');
+    const textEl = currentSlide.querySelector('.text');
+    textEl.textContent = "";
+    textEl.classList.remove('visible');
 
-    slides.forEach(s => s.classList.remove("active"));
-    current.classList.add("active");
+    currentSlide.classList.add('active');
+    await new Promise(r => setTimeout(r, 500)); // delay before media
 
-    await delay(500); // Delay before media fade in
-
-    media.style.opacity = '1';
-
-    if (media.tagName === "VIDEO") {
+    if (media.tagName === 'VIDEO') {
       media.currentTime = 0;
-      await media.play();
-      await delay(5000); // play 5 seconds
+      media.play();
+      await new Promise(r => setTimeout(r, 5000));
     } else {
-      await delay(itemIsOEE(i) ? 15000 : 5000); // 15 sec for OEE image, else 5 sec
+      await new Promise(r => setTimeout(r, sequence[i].duration || 5000));
     }
 
-    media.style.opacity = '0';
-    await delay(2000); // fade out media
+    currentSlide.classList.remove('active');
+    await new Promise(r => setTimeout(r, 2000)); // fade out media
 
-    text.classList.add("visible");
-    await delay(2000); // pause after text visible
-    text.classList.remove("visible");
+    textEl.classList.add('visible');
+    await typeText(textEl, sequence[i].text || "");
+    await new Promise(r => setTimeout(r, 2000)); // hold after typing
+    textEl.classList.remove('visible');
+    await new Promise(r => setTimeout(r, 2000)); // fade out text
 
-    await delay(2000); // fade out text
-    setTimeout(() => runSlides(i + 1), 500); // transition to next
-  }
-
-  function delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
-  function itemIsOEE(index) {
-    return sequence[index].file === "ProudmomentOEE.png";
+    setTimeout(() => runSlide(i + 1), 500); // transition delay
   }
 
   window.onload = () => {
-    runSlides(0);
+    runSlide(0);
   };
 </script>
 
