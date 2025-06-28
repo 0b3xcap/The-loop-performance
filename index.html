@@ -46,6 +46,7 @@
       white-space: pre-wrap;
       opacity: 0;
       transition: opacity 2s ease-in-out;
+      z-index: 2;
     }
     .text.visible {
       opacity: 1;
@@ -88,6 +89,7 @@
 
     const textDiv = document.createElement('div');
     textDiv.className = 'text';
+    textDiv.textContent = item.text || "";
     slide.appendChild(textDiv);
 
     container.appendChild(slide);
@@ -102,11 +104,10 @@
     const currentSlide = slides[i];
     const media = currentSlide.querySelector('video, img');
     const textEl = currentSlide.querySelector('.text');
-    textEl.textContent = "";
     textEl.classList.remove('visible');
-
     currentSlide.classList.add('active');
-    await new Promise(r => setTimeout(r, 500)); // delay before media
+
+    await new Promise(r => setTimeout(r, 500)); // Delay
 
     if (media.tagName === 'VIDEO') {
       media.currentTime = 0;
@@ -116,15 +117,14 @@
       await new Promise(r => setTimeout(r, sequence[i].duration || 5000));
     }
 
+    await new Promise(r => setTimeout(r, 2000)); // Hold media before fade
     currentSlide.classList.remove('active');
-    await new Promise(r => setTimeout(r, 2000)); // fade out media
+    await new Promise(r => setTimeout(r, 2000)); // Media fade out
 
-    // Text display instead of typing
-    textEl.textContent = sequence[i].text || "";
     textEl.classList.add('visible');
-    await new Promise(r => setTimeout(r, 4000)); // hold text
+    await new Promise(r => setTimeout(r, 4000)); // Text hold
     textEl.classList.remove('visible');
-    await new Promise(r => setTimeout(r, 2000)); // fade out text
+    await new Promise(r => setTimeout(r, 2000)); // Text fade out
 
     setTimeout(() => runSlide(i + 1), 500);
   }
