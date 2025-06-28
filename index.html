@@ -2,26 +2,26 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Performance Loop</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body {
+    body {
       background: black;
       color: white;
       font-family: "Arial Black", "Segoe UI Semibold", sans-serif;
-      height: 100%;
+      height: 100vh;
       overflow: hidden;
-      touch-action: none;
     }
     .slide {
       position: absolute;
-      width: 100%;
-      height: 100%;
+      width: 100vw;
+      height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
       flex-direction: column;
+      text-align: center;
       opacity: 0;
       transition: opacity 2s ease-in-out;
     }
@@ -30,8 +30,8 @@
       z-index: 1;
     }
     video, img {
-      width: 100%;
-      height: 100%;
+      width: 100vw;
+      height: 100vh;
       object-fit: cover;
     }
     .text {
@@ -39,11 +39,20 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      text-align: center;
+      color: white;
       font-size: clamp(1.8rem, 4vw, 2.6rem);
       font-weight: 800;
-      text-shadow: 2px 2px 5px rgba(0,0,0,0.7);
+      text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.7);
+      text-align: center;
+      padding: 2rem;
       white-space: pre-wrap;
+      opacity: 1;
+      transition: opacity 2s ease-in-out;
+    }
+    .typed {
+      white-space: pre-wrap;
+      overflow: hidden;
+      display: block;
     }
   </style>
 </head>
@@ -54,10 +63,10 @@
 <script>
   const sequence = [
     { file: "image1PERF.MP4", type: "video", text: "Every shift rewrites the standard." },
-    { file: "ProudmomentOEE.png", type: "image", text: "That’s what flow looks like.", duration: 15000 },
-    { file: "image3PERF.PNG", type: "image", text: "You don’t lose the line.\nYou’re handed a mess." },
+    { file: "ProudmomentOEE.png", type: "image", text: "That’s what flow looks like." },
+    { file: "image3PERF.jpeg", type: "image", text: "You don’t lose the line.\nYou’re handed a mess." },
     { file: "image4PERF.MP4", type: "video", text: "Rejects don’t shout.\nThey slip through if we’re not watching." },
-    { file: "image5PERF.PNG", type: "image", text: "What’s next only works if we’re ready now." },
+    { file: "image5PERF.jpeg", type: "image", text: "What’s next only works if we’re ready now." },
     { file: "image6PERF.MP4", type: "video", text: "Every shift rewrites the standard.\n\nDay after day.\nYear after year." }
   ];
 
@@ -79,10 +88,16 @@
       media = document.createElement('img');
       media.src = item.file;
     }
+
     slide.appendChild(media);
 
     const textDiv = document.createElement('div');
     textDiv.className = 'text';
+    if (item.text) {
+      const span = document.createElement('span');
+      span.className = 'typed';
+      textDiv.appendChild(span);
+    }
     slide.appendChild(textDiv);
 
     container.appendChild(slide);
@@ -110,30 +125,38 @@
     slides.forEach(s => s.classList.remove('active'));
     const currentSlide = slides[i];
     const media = currentSlide.querySelector('video, img');
-    const textEl = currentSlide.querySelector('.text');
-    textEl.textContent = "";
+    const textEl = currentSlide.querySelector('.typed');
+    const textBox = currentSlide.querySelector('.text');
 
     currentSlide.classList.add('active');
-    await new Promise(r => setTimeout(r, 500)); // delay before media
+
+    await new Promise(r => setTimeout(r, 500)); // delay start
 
     if (media.tagName === 'VIDEO') {
       media.currentTime = 0;
       media.play();
-      await new Promise(r => setTimeout(r, 5000));
+      await new Promise(r => setTimeout(r, 5000)); // 5 sec video
     } else {
-      await new Promise(r => setTimeout(r, sequence[i].duration || 5000));
+      await new Promise(r => setTimeout(r, 500)); // slight delay
+      media.style.opacity = '1';
+      if (sequence[i].file === "ProudmomentOEE.png") {
+        await new Promise(r => setTimeout(r, 15000)); // hold OEE image longer
+      } else {
+        await new Promise(r => setTimeout(r, 5000));
+      }
+    }
+
+    if (textEl && sequence[i].text) {
+      textEl.textContent = "";
+      textBox.style.opacity = '1';
+      await typeText(textEl, sequence[i].text);
+      await new Promise(r => setTimeout(r, 2000)); // hold after typing
+      textBox.style.opacity = '0'; // fade out
+      await new Promise(r => setTimeout(r, 2000));
     }
 
     currentSlide.classList.remove('active');
-    await new Promise(r => setTimeout(r, 2000)); // fade out media
-
-    await typeText(textEl, sequence[i].text || "");
-    await new Promise(r => setTimeout(r, 2000)); // hold after typing
-
-    textEl.textContent = "";
-    await new Promise(r => setTimeout(r, 2000)); // fade out text
-
-    setTimeout(() => runSlide(i + 1), 500); // transition delay
+    setTimeout(() => runSlide(i + 1), 500);
   }
 
   window.onload = () => {
