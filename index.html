@@ -46,10 +46,6 @@
       white-space: pre-wrap;
       opacity: 0;
       transition: opacity 2s ease-in-out;
-      z-index: 2;
-    }
-    .text.visible {
-      opacity: 1;
     }
   </style>
 </head>
@@ -74,28 +70,46 @@
     slide.classList.add('slide');
     slide.id = `slide-${i}`;
 
-    let media;
-    if (item.type === "video") {
-      media = document.createElement('video');
-      media.src = item.file;
-      media.autoplay = false;
-      media.muted = true;
-      media.playsInline = true;
-    } else {
-      media = document.createElement('img');
-      media.src = item.file;
-    }
+    const media = item.type === "video"
+      ? Object.assign(document.createElement('video'), {
+          src: item.file,
+          muted: true,
+          playsInline: true
+        })
+      : Object.assign(document.createElement('img'), {
+          src: item.file
+        });
+
     slide.appendChild(media);
 
     const textDiv = document.createElement('div');
     textDiv.className = 'text';
-    textDiv.textContent = item.text || "";
+    textDiv.id = `text-${i}`;
     slide.appendChild(textDiv);
 
     container.appendChild(slide);
   });
 
   const slides = document.querySelectorAll('.slide');
+
+  function typeText(element, text, speed = 120) {
+    return new Promise(resolve => {
+      let i = 0;
+      element.textContent = "";
+      element.style.opacity = 1;
+      const interval = setInterval(() => {
+        element.textContent += text.charAt(i);
+        i++;
+        if (i >= text.length) {
+          clearInterval(interval);
+          setTimeout(() => {
+            element.style.opacity = 0;
+            resolve();
+          }, 2000); // hold after typing
+        }
+      }, speed);
+    });
+  }
 
   async function runSlide(i) {
     if (i >= slides.length) return;
@@ -104,29 +118,29 @@
     const currentSlide = slides[i];
     const media = currentSlide.querySelector('video, img');
     const textEl = currentSlide.querySelector('.text');
-    textEl.classList.remove('visible');
+    const duration = sequence[i].duration || 5000;
+
     currentSlide.classList.add('active');
+    await new Promise(r => setTimeout(r, 500)); // initial delay
 
-    await new Promise(r => setTimeout(r, 500)); // Delay
-
+    // Play media
     if (media.tagName === 'VIDEO') {
       media.currentTime = 0;
       media.play();
       await new Promise(r => setTimeout(r, 5000));
     } else {
-      await new Promise(r => setTimeout(r, sequence[i].duration || 5000));
+      media.style.opacity = 1;
+      await new Promise(r => setTimeout(r, duration));
+      media.style.opacity = 0;
     }
 
-    await new Promise(r => setTimeout(r, 2000)); // Hold media before fade
+    await new Promise(r => setTimeout(r, 2000)); // fade out media
+
+    // Type text after media
+    await typeText(textEl, sequence[i].text || "");
+
     currentSlide.classList.remove('active');
-    await new Promise(r => setTimeout(r, 2000)); // Media fade out
-
-    textEl.classList.add('visible');
-    await new Promise(r => setTimeout(r, 4000)); // Text hold
-    textEl.classList.remove('visible');
-    await new Promise(r => setTimeout(r, 2000)); // Text fade out
-
-    setTimeout(() => runSlide(i + 1), 500);
+    setTimeout(() => runSlide(i + 1), 500); // delay to next slide
   }
 
   window.onload = () => {
