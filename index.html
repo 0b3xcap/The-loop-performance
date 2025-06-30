@@ -49,13 +49,70 @@
       opacity: 0;
       transition: opacity 2s ease-in-out;
     }
+    #startScreen {
+      position: absolute;
+      z-index: 10;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: black;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1em;
+      flex-direction: column;
+      opacity: 0;
+      animation: fadeIn 5s ease-out forwards;
+    }
+    #startScreenText {
+      text-align: center;
+      line-height: 1.4em;
+    }
+    #startButton {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      z-index: 11;
+      background: transparent;
+      border: none;
+    }
+    @keyframes fadeOut {
+      to { opacity: 0; }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
   </style>
 </head>
 <body>
 
+<!-- AUDIO FILES -->
+<audio id="chime1" src="E%20CHIME%20PAUL.wav"></audio>
+<audio id="chime2" src="E%20CHIME%20STD%20.wav"></audio>
+
+<!-- START SCREEN -->
+<div id="startScreen">
+  <div id="startScreenText">
+    CALIBRATING<br>
+    <span style="font-style: italic; font-size: 0.4em;">Tap to continue</span>
+  </div>
+  <button id="startButton"></button>
+</div>
+
+<!-- SLIDES -->
 <div id="slideshow"></div>
 
 <script>
+  const chime1 = document.getElementById("chime1");
+  const chime2 = document.getElementById("chime2");
+  const startScreen = document.getElementById("startScreen");
+  const startButton = document.getElementById("startButton");
+
   const sequence = [
     { file: "image1PERF.MP4", type: "video", text: "Every shift rewrites the standard." },
     { file: "ProudmomentOEE.png", type: "image", text: "That’s what flow looks like.", duration: 15000 },
@@ -120,41 +177,72 @@
     textEl.style.opacity = 0;
 
     currentSlide.classList.add('active');
-    await new Promise(r => setTimeout(r, 500)); // delay start
+    await new Promise(r => setTimeout(r, 500));
 
     media.style.opacity = 1;
 
     if (media.tagName === 'VIDEO') {
       media.currentTime = 0;
       media.play();
-      await new Promise(r => setTimeout(r, 5000)); // video duration
+      await new Promise(r => setTimeout(r, 5000));
       media.style.opacity = 0;
-      await new Promise(r => setTimeout(r, 2000)); // fade out
+      await new Promise(r => setTimeout(r, 2000));
     } else {
       const duration = sequence[i].duration || 5000;
       await new Promise(r => setTimeout(r, duration));
       media.style.opacity = 0;
-      await new Promise(r => setTimeout(r, 2000)); // fade out
+      await new Promise(r => setTimeout(r, 2000));
     }
 
-    await new Promise(r => setTimeout(r, 500)); // short buffer before text
+    await new Promise(r => setTimeout(r, 500));
 
     if (sequence[i].text) {
       textEl.textContent = "";
       textEl.style.opacity = 1;
       await typeText(textEl, sequence[i].text);
-      await new Promise(r => setTimeout(r, 2000)); // hold after typing
+      await new Promise(r => setTimeout(r, 2000));
       textEl.style.opacity = 0;
-      await new Promise(r => setTimeout(r, 2000)); // fade out text
+      await new Promise(r => setTimeout(r, 2000));
     }
 
     currentSlide.classList.remove('active');
     setTimeout(() => runSlide(i + 1), 500);
   }
 
-  window.onload = () => {
-    runSlide(0);
-  };
+  function fadeOutAudio(audio, duration = 5000) {
+    const steps = 50;
+    const stepTime = duration / steps;
+    const volumeStep = audio.volume / steps;
+    let currentStep = 0;
+    const fade = setInterval(() => {
+      if (currentStep < steps) {
+        audio.volume = Math.max(0, audio.volume - volumeStep);
+        currentStep++;
+      } else {
+        clearInterval(fade);
+        audio.pause();
+      }
+    }, stepTime);
+  }
+
+  startButton.addEventListener("click", () => {
+    chime1.volume = 1;
+    chime2.volume = 1;
+    chime1.play();
+    chime2.play();
+
+    startScreen.style.animation = "fadeOut 2s forwards";
+    setTimeout(() => {
+      startScreen.style.display = "none";
+    }, 2000);
+
+    setTimeout(() => {
+      fadeOutAudio(chime1, 5000);
+      fadeOutAudio(chime2, 5000);
+    }, 25000);
+
+    setTimeout(() => runSlide(0), 1000);
+  });
 </script>
 
 </body>
